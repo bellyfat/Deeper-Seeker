@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agent Report Generator</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2rem; background: #f9f9f9; }
+    #output { white-space: pre-wrap; background: #fff; padding: 1rem; border-radius: 8px; border: 1px solid #ccc; height: 400px; overflow-y: scroll; }
+    #status { margin-bottom: 1rem; }
+    input, button { padding: 0.5rem; margin-right: 1rem; }
+  </style>
+</head>
+<body>
+
+  <h2>🧠 Agent Report Generator</h2>
+  <div id="status">Connecting...</div>
+
+  <input type="text" id="queryInput" placeholder="Enter your query..." />
+  <button onclick="sendQuery()">Submit</button>
+
+  <h3>Event Stream:</h3>
+  <div id="output"></div>
+
+  <script>
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/api/v1/generate_report");
+    const statusEl = document.getElementById("status");
+    const outputEl = document.getElementById("output");
+
+    ws.onopen = () => {
+      statusEl.textContent = "✅ Connected to backend";
+    };
+
+    ws.onmessage = (event) => {
+      let msg = event.data;
+      try {
+        const parsed = JSON.parse(msg);
+        outputEl.innerHTML += `\n🔹 <b>${parsed.event_type}</b>\n${JSON.stringify(parsed.event_data, null, 2)}\n\n`;
+      } catch {
+        outputEl.innerHTML += `\n📩 ${msg}\n`;
+      }
+      outputEl.scrollTop = outputEl.scrollHeight;
+    };
+
+    ws.onclose = () => {
+      statusEl.textContent = "❌ Disconnected";
+    };
+
+    function sendQuery() {
+      const input = document.getElementById("queryInput");
+      const value = input.value.trim();
+      if (value) {
+        ws.send(value);
+        input.value = "";
+        outputEl.innerHTML += `\n📤 Sent query: ${value}\n`;
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -20,10 +20,15 @@ Return the research plan in a structured JSON format as follows:
 }
 """
 
-GEN_QUERY_PROMPT = """You are a research analyst agent who is tasked with generating Browser search queries based on the research plan given to you.The current date is 20th Feb 2025 The search queries should be specific and focused such that they can be used to browse Google/Bing to gather relevant resources and information useful for executing the research plan step. 
-Return 3 search queries for each step in JSON format as follows:
+GEN_QUERY_PROMPT = """You are a research analyst agent tasked with generating precise and focused search queries based on a given research plan step. The current date is 4th April 2025. 
+
+Your goal is to produce highly relevant search queries that can be directly used on search engines like Google or Bing to gather valuable information for executing the research plan. 
+
+Strict Output Format:  
+You must return exactly three search queries for each plan step in valid JSON format without any additional text, explanations, or formatting.  
+
+The JSON output must strictly follow this structure:
 {
- "plan_step": "Description of the plan step",
- "search_queries": ["query1", "query2", "query3"]
-}
-"""
+  "plan_step": "Description of the plan step",
+  "search_queries": ["query1", "query2", "query3"]
+}"""

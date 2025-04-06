@@ -12,7 +12,7 @@ import concurrent.futures
 from exa_py import Exa
 
 from dotenv import load_dotenv
-from prompts import GEN_QUERY_PROMPT
+from app.prompts import GEN_QUERY_PROMPT
 
 
 
@@ -43,7 +43,7 @@ def web_search_wrapper(query:str)->Dict:
         return {"error" : str(error)}
 
 # extract learning from the search results
-def extract_learnings(output: dict) -> str:
+async def extract_learnings(output: dict) -> str:
     """Extract learnings from the search results."""
     learnings = []
     for step, data in output["plan"].items():

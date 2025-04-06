@@ -5,10 +5,10 @@ import json
 from groq import Groq
 import concurrent.futures
 from dotenv import load_dotenv
-from prompts import GEN_QUERY_PROMPT
+from app.prompts import GEN_QUERY_PROMPT
 
 
-from services.web_search import web_search_wrapper
+from app.services.web_search import web_search_wrapper
 
 
 

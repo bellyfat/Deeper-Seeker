@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 from groq import Groq
 
-from prompts import FOLLOWUP_PROMPT
+from app.prompts import FOLLOWUP_PROMPT
 
 # Load environment variables
 load_dotenv()
@@ -35,15 +35,15 @@ def generate_followup(context: str) -> Dict:
         return {"question": "Could you clarify further?", "query_context": context}
     
 
-def run_followup_loop(initial_query: str, iterations: int = 3) -> Dict[str, Any]:
+async def run_followup_loop(initial_query: str, iterations:int , websocket) -> Dict[str, Any]:
     """Iteratively generate follow-up questions and collect user responses."""
     context = initial_query
     history = []
     for i in range(iterations):
         followup = generate_followup(context)
         question = followup.get("question", "Could you elaborate?")
-        print(f"\nAssistant: {question}")
-        user_answer = input("Your response: ")
+        await websocket.send_text(f"\nAssistant: {question}")
+        user_answer = await websocket.receive_text()
         context += f" Follow-up Q: {question} Follow-up A: {user_answer}"
         history.append({
             "iteration": i + 1,
