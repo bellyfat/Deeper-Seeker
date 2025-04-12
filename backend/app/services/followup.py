@@ -19,7 +19,7 @@ openai_client = Groq(api_key=GROQ_API_KEY)
 # Follow-up prompt
 FOLLOWUP_PROMPT = FOLLOWUP_PROMPT
 
-def generate_followup(context: str) -> Dict:
+async def generate_followup(context: str) -> Dict:
     """Generate follow-up questions based on the user query and context."""
     try:
         completion = openai_client.chat.completions.create(
@@ -40,7 +40,7 @@ async def run_followup_loop(initial_query: str, iterations:int , websocket) -> D
     context = initial_query
     history = []
     for i in range(iterations):
-        followup = generate_followup(context)
+        followup = await generate_followup(context)
         question = followup.get("question", "Could you elaborate?")
         await websocket.send_text(f"\nAssistant: {question}")
         user_answer = await websocket.receive_text()

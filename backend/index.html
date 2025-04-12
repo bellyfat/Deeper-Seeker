@@ -13,8 +13,12 @@
 <body>
 
   <h2>🧠 Agent Report Generator</h2>
-  <div id="status">Connecting...</div>
+  <div id="status">🔌 Not connected</div>
 
+  <input type="number" id="clientIdInput" placeholder="Client ID (e.g. 1)" />
+  <button onclick="connect()">Connect</button>
+
+  <br><br>
   <input type="text" id="queryInput" placeholder="Enter your query..." />
   <button onclick="sendQuery()">Submit</button>
 
@@ -22,36 +26,56 @@
   <div id="output"></div>
 
   <script>
-    const ws = new WebSocket("ws://127.0.0.1:8000/ws/api/v1/generate_report");
+    let ws = null;
     const statusEl = document.getElementById("status");
     const outputEl = document.getElementById("output");
 
-    ws.onopen = () => {
-      statusEl.textContent = "✅ Connected to backend";
-    };
-
-    ws.onmessage = (event) => {
-      let msg = event.data;
-      try {
-        const parsed = JSON.parse(msg);
-        outputEl.innerHTML += `\n🔹 <b>${parsed.event_type}</b>\n${JSON.stringify(parsed.event_data, null, 2)}\n\n`;
-      } catch {
-        outputEl.innerHTML += `\n📩 ${msg}\n`;
+    function connect() {
+      const clientId = document.getElementById("clientIdInput").value.trim();
+      if (!clientId) {
+        alert("Please enter a Client ID.");
+        return;
       }
-      outputEl.scrollTop = outputEl.scrollHeight;
-    };
 
-    ws.onclose = () => {
-      statusEl.textContent = "❌ Disconnected";
-    };
+      const url = `ws://127.0.0.1:8000/ws/api/v1/generate_report?client_id=${clientId}`;
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        statusEl.textContent = `✅ Connected as Client ${clientId}`;
+        outputEl.innerHTML += `\n🟢 Connected to WebSocket as Client ${clientId}\n`;
+      };
+
+      ws.onmessage = (event) => {
+        let msg = event.data;
+        try {
+          const parsed = JSON.parse(msg);
+          outputEl.innerHTML += `\n🔹 <b>${parsed.event_type}</b>\n${JSON.stringify(parsed.event_data, null, 2)}\n\n`;
+        } catch {
+          outputEl.innerHTML += `\n📩 ${msg}\n`;
+        }
+        outputEl.scrollTop = outputEl.scrollHeight;
+      };
+
+      ws.onclose = () => {
+        statusEl.textContent = "❌ Disconnected";
+        outputEl.innerHTML += `\n🔴 Connection closed\n`;
+      };
+
+      ws.onerror = (err) => {
+        statusEl.textContent = "⚠️ WebSocket error";
+        outputEl.innerHTML += `\n❗ WebSocket error: ${err.message || err}\n`;
+      };
+    }
 
     function sendQuery() {
       const input = document.getElementById("queryInput");
       const value = input.value.trim();
-      if (value) {
+      if (value && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(value);
         input.value = "";
         outputEl.innerHTML += `\n📤 Sent query: ${value}\n`;
+      } else {
+        alert("WebSocket not connected or query is empty.");
       }
     }
   </script>

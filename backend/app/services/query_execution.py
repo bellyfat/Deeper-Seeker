@@ -5,9 +5,10 @@ import json
 from groq import Groq
 import concurrent.futures
 from dotenv import load_dotenv
+import asyncio
+
+
 from app.prompts import GEN_QUERY_PROMPT
-
-
 from app.services.web_search import web_search_wrapper
 
 
@@ -25,7 +26,7 @@ GEN_QUERY_PROMPT = GEN_QUERY_PROMPT
 
 # step - step no. in string
 # description - description of the step.
-def generate_queries_for_step(step: str, description: str) -> Dict:
+async def generate_queries_for_step(step: str, description: str) -> Dict:
     """Generate search queries for a specific research step."""
     try:
         completion = openai_client.chat.completions.create(
@@ -45,28 +46,35 @@ def generate_queries_for_step(step: str, description: str) -> Dict:
     
 
 
-### function to execute each search query and get results.
-def execute_queries(step_queries: Dict[str, List[str]]) -> Dict:
-    """Execute search queries in parallel and return the top 3 citations from each result."""
+
+
+async def execute_queries(step_queries: Dict[str, List[str]]) -> Dict:
+    """Execute search queries concurrently using asyncio and return results."""
     search_results = {"queries": {}}
+    query_tasks = []
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        future_to_query = {executor.submit(web_search_wrapper, query): query for query in step_queries}
+    # Step 1: Prepare tasks for all queries
+    for step, queries in step_queries.items():
+        for query in queries:
+            query_tasks.append((step, query, web_search_wrapper(query)))
 
-        for future in concurrent.futures.as_completed(future_to_query):
-            query = future_to_query[future]
-            try:
-                response = future.result()
-                answer = response.get("answer", "No answer found")
-                citations = response.get("citations", [])[:1]  # Get top 3 citations
+    # Step 2: Run all web searches concurrently
+    responses = await asyncio.gather(*(task[2] for task in query_tasks), return_exceptions=True)
 
-                search_results["queries"][query] = {
-                    "answer": answer,
-                    "top_citations": citations
-                }
-            except Exception as exc:
-                search_results["queries"][query] = {
-                    "error": str(exc)
-                }
+    # Step 3: Build the structured response
+    for i, (step, query, _) in enumerate(query_tasks):
+        response = responses[i]
+        if isinstance(response, Exception):
+            search_results["queries"][query] = {
+                "error": str(response)
+            }
+        else:
+            answer = response.get("answer", "No answer found")
+            citations = response.get("citations", [])[:1]
+
+            search_results["queries"][query] = {
+                "answer": answer,
+                "top_citations": citations
+            }
 
     return search_results

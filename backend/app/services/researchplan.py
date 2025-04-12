@@ -54,14 +54,14 @@ async def execute_research_plan(plan_steps: Dict[str, str] , websocket) -> Dict:
     for step, description in plan_steps.items():
 
         # Generate search queries for the step
-        search_queries = generate_queries_for_step(step, description)
+        search_queries = await generate_queries_for_step(step, description)
         
         if step in search_queries:
             queries = search_queries[step].get("search_queries", [])
         else:
             queries = ["No queries generated"]
         
-        search_results = execute_queries(queries)
+        search_results = await execute_queries({step:queries})
 
         plan_exec_step = {
             "plan_step" : description,

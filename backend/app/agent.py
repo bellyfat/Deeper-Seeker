@@ -10,16 +10,18 @@ from app.utils.events import send_event
 
 
 class Agent:
-    def __init__(self, websocket):
+    def __init__(self, websocket, client_id ,manager):
         self.websocket = websocket
+        self.client_id = client_id
+        self.manager = manager
 
     async def agent_executor(self):
         """function defining the orchestration and execution flow of the agent"""
         try:
-                await self.websocket.send_text("Agent executor started. Please enter your query")
+                await self.manager.send_msg(self.client_id , f"Agent executor started for client:{self.client_id}")
                 initial_query = await self.websocket.receive_text()
 
-                await self.websocket.send_text(f"Query received: {initial_query}")
+                await self.manager.send_msg(self.client_id  , f"Query received: {initial_query} from client:{self.client_id}")
 
                 # Follow-up questions
                 followup_result = await run_followup_loop(initial_query, 3, self.websocket)
@@ -53,9 +55,9 @@ class Agent:
                     report_content = report_response["final_report_content"]
                     await send_event(self.websocket,"report_generated_saved" , report_content)
                 else:
-                    await self.websocket.send_text("Error generating report. Please try again.")
+                    await self.manager.send_msg( self.client_id , "Error generating report. Please try again.")
 
-                await self.websocket.send_text("You can ask another question or type 'exit' to leave.")
+                await self.manager.send_msg(self.client_id , f"{self.client_id} can ask another question or type 'exit' to leave.")
 
         except Exception as e:
-                await self.websocket.send_text(f"Error processing query: {str(e)}")
+                await self.manager.send_msg(self.client_id,f"Error processing query: {str(e)}")

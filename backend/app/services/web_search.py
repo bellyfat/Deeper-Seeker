@@ -10,6 +10,7 @@ import time
 import pyfiglet
 import concurrent.futures
 from exa_py import Exa
+import httpx
 
 from dotenv import load_dotenv
 from app.prompts import GEN_QUERY_PROMPT
@@ -30,17 +31,22 @@ openai_client = Groq(api_key=GROQ_API_KEY)
 GEN_QUERY_PROMPT = GEN_QUERY_PROMPT
 
 
+async def web_search_wrapper(query: str) -> Dict:
+    """Async wrapper around Exa Answer API using httpx."""
+    data = {"query": query, "text": True}
+    headers = {
+        "Authorization": f"Bearer {EXA_API_KEY}",
+        "Content-type": "application/json"
+    }
 
-# wrapper for web search -- roadmap -> add multiple supports (exa, firecrawl, tavily search)
-def web_search_wrapper(query:str)->Dict:
-    """a wrapper around exa answer api"""
-    data = {"query": query , "text" : True}
     try:
-        response = requests.post(EXA_BASE_URL, json=data , headers={"Authorization" :  f"Bearer {EXA_API_KEY}", "Content-type" : "application/json"})
-        response.raise_for_status
-        return response.json()
-    except requests.exceptions.RequestException as error:
-        return {"error" : str(error)}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(EXA_BASE_URL, json=data, headers=headers)
+            response.raise_for_status()
+            return response.json()
+    except httpx.HTTPError as error:
+        return {"error": str(error)}
+
 
 # extract learning from the search results
 async def extract_learnings(output: dict) -> str:
