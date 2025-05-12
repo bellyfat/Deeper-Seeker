@@ -16,16 +16,6 @@ manager = ConnectionManager()
 async def root():
     return {"message": "API is running"}
 
-# @app.websocket("/ws/api/v1/generate_report")
-# async def websocket_endpoint(websocket: WebSocket):
-#     await manager.connect(websocket)
-#     agent = Agent(websocket)
-#     try:
-#         await agent.agent_executor()
-#     except WebSocketDisconnect:
-#         print("Client disconnected")
-#     except Exception as e:
-#         await websocket.send_text(f"Error: {str(e)}")
 
 
 
@@ -41,7 +31,7 @@ async def websocket_endpoint(websocket: WebSocket):
     agent = Agent(websocket, client_id, manager)
 
     try:
-        # 🔥 Run agent_executor in the background
+        # Run agent_executor in the background
         await asyncio.create_task(agent.agent_executor())
     except WebSocketDisconnect:
         print(f"{client_id} got disconnected")
